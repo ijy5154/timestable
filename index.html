@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>동물 친구들과 함께하는 구구단 & 나눗셈 모험</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Gaegu, Jua -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Jua&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    body {
+      font-family: 'Jua', 'Gaegu', cursive, sans-serif;
+      background-color: #FFF5F7;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    
+    .font-gaegu {
+      font-family: 'Gaegu', cursive;
+    }
+
+    /* Cute Pastel Color System */
+    .bg-kawaii-pink { background-color: #FFEFF3; }
+    .bg-kawaii-yellow { background-color: #FFFDE6; }
+    .bg-kawaii-blue { background-color: #EBF8FF; }
+    
+    .border-chiikawa-pink { border-color: #FFB7C5; }
+    .border-chiikawa-blue { border-color: #A3D8F4; }
+    .border-chiikawa-yellow { border-color: #FCE38A; }
+
+    /* Custom Animations */
+    @keyframes bounce-gentle {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+    .animate-bounce-gentle {
+      animation: bounce-gentle 2s infinite ease-in-out;
+    }
+
+    @keyframes pop-up {
+      0% { transform: scale(0.8); opacity: 0; }
+      70% { transform: scale(1.05); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .animate-pop-up {
+      animation: pop-up 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-6px); }
+      40%, 80% { transform: translateX(6px); }
+    }
+    .animate-shake {
+      animation: shake 0.4s ease-in-out;
+    }
+
+    /* Custom Glass & Shadow */
+    .kawaii-card {
+      background: rgba(255, 255, 255, 0.95);
+      box-shadow: 0 10px 25px -5px rgba(255, 182, 197, 0.4), 0 8px 10px -6px rgba(255, 182, 197, 0.2);
+    }
+
+    .kawaii-btn {
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 0 0 rgba(0,0,0,0.1);
+    }
+    .kawaii-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 0 rgba(0,0,0,0.1);
+    }
+
+    /* Speech Bubble Triangle */
+    .speech-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 10px 10px 0;
+      border-style: solid;
+      border-color: #ffffff transparent;
+      display: block;
+      width: 0;
+    }
+  </style>
+</head>
+<body class="min-h-screen text-slate-700 flex flex-col justify-between overflow-x-hidden relative">
+
+  <!-- Canvas for Confetti Particle Effects -->
+  <canvas id="confetti-canvas" class="fixed inset-0 pointer-events-none z-50"></canvas>
+
+  <!-- Navigation Header -->
+  <header class="w-full bg-white/80 backdrop-blur-md border-b-4 border-pink-200 sticky top-0 z-30 px-4 py-3">
+    <div class="max-w-4xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-2 cursor-pointer" onclick="switchView('menu')">
+        <div class="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center border-2 border-pink-300">
+          <span class="text-2xl">🐻</span>
+        </div>
+        <h1 class="text-xl md:text-2xl text-pink-500 font-bold tracking-wide">동물 친구들 수학모험</h1>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <!-- Sticker Book Button -->
+        <button onclick="openStickerBook()" class="kawaii-btn bg-yellow-100 hover:bg-yellow-200 text-yellow-800 border-2 border-yellow-300 px-3 py-1.5 rounded-2xl flex items-center gap-1.5 text-base md:text-lg">
+          <i class="fa-solid fa-book-bookmark text-yellow-500"></i>
+          <span>스티커북</span>
+          <span id="sticker-count-badge" class="bg-red-400 text-white text-xs px-2 py-0.5 rounded-full font-bold ml-1">0/8</span>
+        </button>
+
+        <!-- Sound Toggle -->
+        <button id="sound-btn" onclick="toggleSound()" class="kawaii-btn bg-pink-100 hover:bg-pink-200 text-pink-600 border-2 border-pink-300 w-10 h-10 rounded-2xl flex items-center justify-center">
+          <i class="fa-solid fa-volume-high text-lg"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="max-w-4xl w-full mx-auto p-4 flex-1 flex flex-col justify-center items-center">
+
+    <!-- VIEW 1: Main Menu -->
+    <section id="view-menu" class="w-full flex flex-col items-center gap-6 py-4 animate-pop-up">
+      <!-- Welcome Hero Banner -->
+      <div class="text-center relative">
+        <div class="relative inline-block">
+          <!-- Speech Bubble -->
+          <div class="speech-bubble relative bg-white border-4 border-pink-300 px-6 py-3 rounded-3xl text-lg md:text-xl font-bold text-pink-600 mb-4 inline-block shadow-lg animate-bounce-gentle">
+            "나랑 같이 신나게 구구단이랑 나눗셈 공부할래? 와아-!"
+          </div>
+        </div>
+
+        <!-- SVG Character Avatars Display -->
+        <div class="flex justify-center items-end gap-3 md:gap-6 my-2">
+          <!-- Momo (Blue Cat) -->
+          <div class="flex flex-col items-center">
+            <svg class="w-20 h-20 md:w-24 md:h-24 hover:scale-110 transition-transform" viewBox="0 0 100 100">
+              <circle cx="50" cy="55" r="38" fill="#FFF" stroke="#4A5568" stroke-width="3"/>
+              <!-- Blue Ear Caps Pattern -->
+              <path d="M 18,38 Q 30,22 50,32 Q 70,22 82,38 Q 50,42 18,38 Z" fill="#A3D8F4"/>
+              <!-- Ears -->
+              <path d="M 22,28 Q 15,10 32,20 Z" fill="#FFF" stroke="#4A5568" stroke-width="3"/>
+              <path d="M 78,28 Q 85,10 68,20 Z" fill="#FFF" stroke="#4A5568" stroke-width="3"/>
+              <!-- Whiskers -->
+              <line x1="20" y1="58" x2="10" y2="56" stroke="#4A5568" stroke-width="2" stroke-linecap="round"/>
+              <line x1="20" y1="62" x2="12" y2="64" stroke="#4A5568" stroke-width="2" stroke-linecap="round"/>
+              <line x1="80" y1="58" x2="90" y2="56" stroke="#4A5568" stroke-width="2" stroke-linecap="round"/>
+              <line x1="80" y1="62" x2="88" y2="64" stroke="#4A5568" stroke-width="2" stroke-linecap="round"/>
+              <!-- Eyes & Mouth -->
+              <circle cx="38" cy="55" r="4" fill="#4A5568"/>
+              <circle cx="62" cy="55" r="4" fill="#4A5568"/>
+              <ellipse cx="32" cy="62" rx="4" ry="2" fill="#FFB7C5"/>
+              <ellipse cx="68" cy="62" rx="4" ry="2" fill="#FFB7C5"/>
+              <path d="M 45,64 Q 50,68 55,64" fill="none" stroke="#4A5568" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+            <span class="text-sm font-bold bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full border border-blue-300 mt-1">모모 (고양이)</span>
+          </div>
+
+          <!-- Popo (White Bear) -->
+          <div class="flex flex-col items-center">
+            <svg class="w-24 h-24 md:w-28 md:h-28 hover:scale-110 transition-transform" viewBox="0 0 100 100">
+              <!-- Round Bear Ears -->
+              <circle cx="28" cy="22" r="10" fill="#FFF" stroke="#4A5568" stroke-width="3"/>
+              <circle cx="72" cy="22" r="10" fill="#FFF" stroke="#4A5568" stroke-width="3"/>
+              <circle cx="28" cy="22" r="6" fill="#FFD1DC"/>
+              <circle cx="72" cy="22" r="6" fill="#FFD1DC"/>
+              <!-- Head -->
+              <circle cx="50" cy="55" r="40" fill="#FFF" stroke="#4A5568" stroke-width="3"/>
+              <!-- Snout -->
+              <ellipse cx="50" cy="60" rx="10" ry="8" fill="#FFF5F7"/>
+              <ellipse cx="50" cy="56" rx="3.5" ry="2.5" fill="#4A5568"/>
+              <!-- Eyes -->
+              <circle cx="36" cy="50" r="4.5" fill="#4A5568"/>
+              <circle cx="64" cy="50" r="4.5" fill="#4A5568"/>
+              <circle cx="38" cy="48" r="1.5" fill="#FFF"/>
+              <circle cx="66" cy="48" r="1.5" fill="#FFF"/>
+              <!-- Cheeks -->
+              <ellipse cx="30" cy="58" rx="5" ry="3" fill="#FFB7C5"/>
+              <ellipse cx="70" cy="58" rx="5" ry="3" fill="#FFB7C5"/>
+              <!-- Smile -->
+              <path d="M 46,62 Q 50,65 54,62" fill="none" stroke="#4A5568" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+            <span class="text-base font-bold bg-pink-100 text-pink-600 px-3 py-0.5 rounded-full border border-pink-300 mt-1">포포 (곰돌이)</span>
+          </div>
+
+          <!-- Toto (Yellow Bunny) -->
+          <div class="flex flex-col items-center">
+            <svg class="w-20 h-20 md:w-24 md:h-24 hover:scale-110 transition-transform" viewBox="0 0 100 100">
+              <!-- Long Ears -->
+              <ellipse cx="35" cy="20" rx="6" ry="18" fill="#FFFDE6" stroke="#4A5568" stroke-width="3"/>
+              <ellipse cx="65" cy="20" rx="6" ry="18" fill="#FFFDE6" stroke="#4A5568" stroke-width="3"/>
+              <ellipse cx="35" cy="20" rx="3" ry="12" fill="#FFD1DC"/>
+              <ellipse cx="65" cy="20" rx="3" ry="12" fill="#FFD1DC"/>
+              <!-- Head -->
+              <circle cx="50" cy="60" r="35" fill="#FFFDE6" stroke="#4A5568" stroke-width="3"/>
+              <!-- Eyes -->
+              <circle cx="38" cy="58" r="4" fill="#4A5568"/>
+              <circle cx="62" cy="58" r="4" fill="#4A5568"/>
+              <!-- Cheeks -->
+              <ellipse cx="30" cy="65" rx="4" ry="2" fill="#FFB7C5"/>
+              <ellipse cx="70" cy="65" rx="4" ry="2" fill="#FFB7C5"/>
+              <!-- Cute Bunny Nose/Mouth -->
+              <path d="M 50,62 L 48,65 L 52,65 Z" fill="#FF8BA7"/>
+              <path d="M 46,67 Q 50,70 54,67" fill="none" stroke="#4A5568" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <span class="text-sm font-bold bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full border border-yellow-300 mt-1">토토 (토끼)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Game Mode Selection Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-3xl mt-4">
+
+        <!-- Mode 1: Multiplication -->
+        <button onclick="startGame('multiplication')" class="kawaii-card kawaii-btn p-6 rounded-3xl border-4 border-pink-200 hover:border-pink-400 flex flex-col items-center text-center group">
+          <div class="w-16 h-16 rounded-2xl bg-pink-100 flex items-center justify-center text-3xl mb-3 group-hover:scale-110 transition-transform">
+            ✖️
+          </div>
+          <h2 class="text-2xl font-bold text-pink-600 mb-1">구구단 연습</h2>
+          <p class="text-gray-500 text-sm">2단부터 9단까지!<br>기초 수학 실력을 쑥쑥 키워요.</p>
+          <div class="mt-4 px-4 py-1.5 bg-pink-500 text-white rounded-full font-bold text-sm">시작하기</div>
+        </button>
+
+        <!-- Mode 2: Division -->
+        <button onclick="startGame('division')" class="kawaii-card kawaii-btn p-6 rounded-3xl border-4 border-blue-200 hover:border-blue-400 flex flex-col items-center text-center group">
+          <div class="w-16 h-16 rounded-2xl bg-blue-100 flex items-center justify-center text-3xl mb-3 group-hover:scale-110 transition-transform">
+            ➗
+          </div>
+          <h2 class="text-2xl font-bold text-blue-600 mb-1">나눗셈 연습</h2>
+          <p class="text-gray-500 text-sm">구구단으로 쉽게 풀어보는<br>초등 3학년 나눗셈 기초!</p>
+          <div class="mt-4 px-4 py-1.5 bg-blue-500 text-white rounded-full font-bold text-sm">시작하기</div>
+        </button>
+
+        <!-- Mode 3: Mixed Challenge -->
+        <button onclick="startGame('mixed')" class="kawaii-card kawaii-btn p-6 rounded-3xl border-4 border-yellow-200 hover:border-yellow-400 flex flex-col items-center text-center group">
+          <div class="w-16 h-16 rounded-2xl bg-yellow-100 flex items-center justify-center text-3xl mb-3 group-hover:scale-110 transition-transform">
+            ⚡
+          </div>
+          <h2 class="text-2xl font-bold text-amber-600 mb-1">혼합 챌린지</h2>
+          <p class="text-gray-500 text-sm">60초 동안 구구단과 나눗셈을<br>마구마구 정복해보자!</p>
+          <div class="mt-4 px-4 py-1.5 bg-amber-500 text-white rounded-full font-bold text-sm">도전하기</div>
+        </button>
+
+      </div>
+    </section>
+
+    <!-- VIEW 2: Game Board -->
+    <section id="view-game" class="w-full max-w-2xl flex-col items-center gap-4 hidden">
+      
+      <!-- Top Stats Bar & Chiikawa Happiness -->
+      <div class="w-full kawaii-card p-4 rounded-3xl border-4 border-pink-200 flex flex-col gap-3">
+        
+        <div class="flex items-center justify-between text-base md:text-lg">
+          <div class="flex items-center gap-2">
+            <span id="game-mode-tag" class="px-3 py-1 rounded-full bg-pink-100 text-pink-600 font-bold border border-pink-300">구구단 연습</span>
+            <span id="timer-display" class="hidden px-3 py-1 rounded-full bg-red-100 text-red-600 font-bold border border-red-300">⏱️ 60초</span>
+          </div>
+
+          <div class="flex items-center gap-4 font-bold">
+            <div class="text-amber-500">⭐ 점수: <span id="score-text">0</span></div>
+            <div class="text-orange-500">🔥 연속정답: <span id="streak-text">0</span></div>
+          </div>
+        </div>
+
+        <!-- Happiness Energy Bar -->
+        <div class="flex items-center gap-3 bg-pink-50/80 p-2.5 rounded-2xl border border-pink-200">
+          <div class="text-2xl animate-bounce-gentle" id="snack-icon">🍮</div>
+          <div class="flex-1">
+            <div class="flex justify-between text-xs font-bold text-pink-600 mb-1">
+              <span>동물 친구들의 행복도 (맛있는 간식 주기)</span>
+              <span id="happiness-percent">0%</span>
+            </div>
+            <div class="w-full bg-white h-4 rounded-full overflow-hidden border border-pink-300">
+              <div id="happiness-bar" class="bg-gradient-to-r from-pink-300 to-pink-500 h-full w-0 transition-all duration-300 rounded-full"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Question Box & Character Area -->
+      <div class="w-full kawaii-card p-6 md:p-8 rounded-3xl border-4 border-pink-300 flex flex-col items-center relative overflow-hidden">
+        
+        <!-- Animated Character Banner -->
+        <div class="flex items-center gap-4 mb-4">
+          <!-- Character Speech Bubble -->
+          <div id="char-speech" class="speech-bubble relative bg-pink-100 border-2 border-pink-300 px-4 py-2 rounded-2xl text-base md:text-lg font-bold text-pink-700 shadow-sm">
+            "정답을 맞혀서 푸딩을 줘!"
+          </div>
+
+          <!-- Character Avatar Container -->
+          <div id="char-avatar-box" class="w-20 h-20 flex-shrink-0 transition-transform">
+            <!-- Dynamic SVG inserted via JS -->
+          </div>
+        </div>
+
+        <!-- Problem Display -->
+        <div class="my-4 text-center">
+          <div class="text-xs md:text-sm font-bold text-pink-400 mb-1">다음 문제를 풀어보세요!</div>
+          <div id="problem-text" class="text-5xl md:text-6xl font-black text-slate-800 tracking-wider">
+            7 × 8 = ?
+          </div>
+        </div>
+
+        <!-- Input Mode Switcher (Multiple Choice vs Keypad) -->
+        <div class="flex justify-center gap-2 mb-4">
+          <button onclick="setInputMode('choice')" id="btn-mode-choice" class="px-3 py-1 text-sm rounded-xl font-bold bg-pink-500 text-white shadow">4지선다</button>
+          <button onclick="setInputMode('keypad')" id="btn-mode-keypad" class="px-3 py-1 text-sm rounded-xl font-bold bg-gray-200 text-gray-700">숫자 키패드</button>
+        </div>
+
+        <!-- INPUT SECTION A: 4 Choice Cards -->
+        <div id="input-choice-container" class="grid grid-cols-2 gap-3 md:gap-4 w-full max-w-md">
+          <!-- 4 Choice buttons generated in JS -->
+        </div>
+
+        <!-- INPUT SECTION B: Keypad -->
+        <div id="input-keypad-container" class="w-full max-w-xs flex flex-col items-center gap-3 hidden">
+          <!-- Answer Display Box -->
+          <div class="w-full h-14 bg-gray-50 rounded-2xl border-2 border-pink-200 flex items-center justify-center text-3xl font-bold text-pink-600 tracking-widest shadow-inner">
+            <span id="keypad-input-val"></span>
+            <span class="animate-pulse text-pink-300">|</span>
+          </div>
+
+          <!-- Keypad Buttons Grid -->
+          <div class="grid grid-cols-3 gap-2 w-full">
+            <button onclick="pressKey(1)" class="kawaii-btn bg-white hover:bg-pink-50 border-2 border-pink-200 text-2xl font-bold py-2.5 rounded-2xl text-slate-700">1</button>
+            <button onclick="pressKey(2)" class="kawaii-btn bg-white hover:bg-pink-50 border-2 border-pink-200 text-2xl font-bold py-2.5 rounded-2xl text-slate-700">2</button>
+            <button onclick="pressKey(3)" class="kawaii-btn bg-white hover:bg-pink-50 border-2 border-pink-200 text-2xl font-bold py-2.5 rounded-2xl text-slate-700">3</button>
+            <button onclick="pressKey(4)" class="kawaii-btn bg-white hover:bg-pink-50 border-2 border-pink-200 text-2xl font-bold py-2.5 rounded-2xl text-slate-700">4</button>
+            <button onclick="pressKey(5)" class="kawaii-btn bg-white hover:bg-pink-50 border-2 border-pink-200 text-2xl font-bold py-2.5 rounded-2xl text-slate-700">5</button>
+            <button onclick="pressKey(6)" class="kawaii-btn bg-white hover:bg-pink-50 border-2 border-pink-200 text-2xl font-bold py-2.5 rounded-2xl text-slate-700">6</button>
+            <button onclick="pressKey(7)" class="kawaii-btn bg-white hover:bg-pink-50 border-2 border-pink-200 text-2xl font-bold py-2.5 rounded-2xl text-slate-700">7</button>
+            <button onclick="pressKey(8)" class="kawaii-btn bg-white hover:bg-pink-50 border-2 border-pink-200 text-2xl font-bold py-2.5 rounded-2xl text-slate-700">8</button>
+            <button onclick="pressKey(9)" class="kawaii-btn bg-white hover:bg-pink-50 border-2 border-pink-200 text-2xl font-bold py-2.5 rounded-2xl text-slate-700">9</button>
+            <button onclick="pressKey('del')" class="kawaii-btn bg-red-100 text-red-500 border-2 border-red-200 text-lg font-bold py-2.5 rounded-2xl">지우기</button>
+            <button onclick="pressKey(0)" class="kawaii-btn bg-white hover:bg-pink-50 border-2 border-pink-200 text-2xl font-bold py-2.5 rounded-2xl text-slate-700">0</button>
+            <button onclick="submitKeypad()" class="kawaii-btn bg-pink-500 hover:bg-pink-600 text-white border-2 border-pink-600 text-lg font-bold py-2.5 rounded-2xl">입력</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Give up / Back to Menu -->
+      <button onclick="switchView('menu')" class="text-sm font-bold text-gray-400 hover:text-pink-500 underline py-2">
+        ← 메인 메뉴로 돌아가기
+      </button>
+
+    </section>
+
+    <!-- VIEW 3: Result Summary Screen -->
+    <section id="view-result" class="w-full max-w-md kawaii-card p-6 md:p-8 rounded-3xl border-4 border-pink-300 text-center flex-col items-center gap-4 hidden animate-pop-up">
+      <div class="text-5xl mb-1">🎉</div>
+      <h2 class="text-3xl font-bold text-pink-600">참 잘했어요!</h2>
+      <p id="result-subtitle" class="text-gray-500 font-bold">동물 친구들이 아주 기뻐해요!</p>
+
+      <!-- Score Box -->
+      <div class="w-full bg-pink-50 p-4 rounded-2xl border-2 border-pink-200 flex flex-col gap-2 my-2">
+        <div class="flex justify-between items-center text-lg font-bold">
+          <span class="text-gray-600">최종 점수:</span>
+          <span id="result-score" class="text-2xl text-pink-600">0점</span>
+        </div>
+        <div class="flex justify-between items-center text-base font-bold">
+          <span class="text-gray-600">맞힌 문제:</span>
+          <span id="result-correct" class="text-green-600">0개</span>
+        </div>
+        <div class="flex justify-between items-center text-base font-bold">
+          <span class="text-gray-600">최대 연속 정답:</span>
+          <span id="result-max-streak" class="text-orange-500">0회</span>
+        </div>
+      </div>
+
+      <!-- New Sticker Alert Banner (If unlocked) -->
+      <div id="unlocked-sticker-banner" class="hidden w-full bg-yellow-100 border-2 border-yellow-300 p-3 rounded-2xl flex items-center justify-center gap-3 animate-bounce-gentle">
+        <span class="text-3xl">🏅</span>
+        <div class="text-left">
+          <div class="text-xs font-bold text-amber-700">새 스티커 획득!</div>
+          <div id="unlocked-sticker-name" class="text-sm font-bold text-amber-900">구구단 달인</div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex gap-3 w-full mt-3">
+        <button onclick="restartGame()" class="kawaii-btn flex-1 bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 rounded-2xl border-2 border-pink-600">
+          다시 하기
+        </button>
+        <button onclick="switchView('menu')" class="kawaii-btn flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-2xl border-2 border-gray-300">
+          메뉴로
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- STICKER BOOK MODAL -->
+  <div id="modal-stickerbook" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="kawaii-card w-full max-w-lg p-6 rounded-3xl border-4 border-yellow-300 flex flex-col gap-4 animate-pop-up max-h-[90vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between border-b-2 border-yellow-200 pb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-3xl">📖</span>
+          <h2 class="text-2xl font-bold text-amber-700">숲속 동물 스티커 북</h2>
+        </div>
+        <button onclick="closeStickerBook()" class="w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-full font-bold text-gray-500 flex items-center justify-center">✕</button>
+      </div>
+
+      <p class="text-sm text-gray-500">문제를 풀고 칭호를 얻어 귀여운 스티커를 모아보세요!</p>
+
+      <!-- Stickers Grid -->
+      <div id="stickers-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <!-- Generated dynamically via JS -->
+      </div>
+
+      <button onclick="closeStickerBook()" class="kawaii-btn bg-amber-400 hover:bg-amber-500 text-white font-bold py-2.5 rounded-2xl border-2 border-amber-600 mt-2">
+        닫기
+      </button>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="w-full text-center py-3 text-xs font-bold text-pink-400">
+    치이카와 구구단 & 나눗셈 수학 모험 🌸 초등 3학년 즐거운 공부
+  </footer>
+
+  <!-- JAVASCRIPT GAME LOGIC -->
+  <script>
+    // Dynamic SVG Avatars (Popo the Bear, Momo the Cat, Toto the Bunny)
+    const CHARACTERS = {
+      popo: `
+        <svg class="w-full h-full animate-bounce-gentle" viewBox="0 0 100 100">
+          <circle cx="28" cy="22" r="10" fill="#FFF" stroke="#4A5568" stroke-width="3"/>
+          <circle cx="72" cy="22" r="10" fill="#FFF" stroke="#4A5568" stroke-width="3"/>
+          <circle cx="28" cy="22" r="6" fill="#FFD1DC"/>
+          <circle cx="72" cy="22" r="6" fill="#FFD1DC"/>
+          <circle cx="50" cy="55" r="40" fill="#FFF" stroke="#4A5568" stroke-width="3"/>
+          <ellipse cx="50" cy="60" rx="10" ry="8" fill="#FFF5F7"/>
+          <ellipse cx="50" cy="56" rx="3.5" ry="2.5" fill="#4A5568"/>
+          <circle cx="36" cy="50" r="4.5" fill="#4A5568"/>
+          <circle cx="64" cy="50" r="4.5" fill="#4A5568"/>
+          <circle cx="38" cy="48" r="1.5" fill="#FFF"/>
+          <circle cx="66" cy="48" r="1.5" fill="#FFF"/>
+          <ellipse cx="30" cy="58" rx="5" ry="3" fill="#FFB7C5"/>
+          <ellipse cx="70" cy="58" rx="5" ry="3" fill="#FFB7C5"/>
+          <path d="M 46,62 Q 50,65 54,62" fill="none" stroke="#4A5568" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>`,
+      momo: `
+        <svg class="w-full h-full animate-bounce-gentle" viewBox="0 0 100 100">
+          <circle cx="50" cy="55" r="38" fill="#FFF" stroke="#4A5568" stroke-width="3"/>
+          <path d="M 18,38 Q 30,22 50,32 Q 70,22 82,38 Q 50,42 18,38 Z" fill="#A3D8F4"/>
+          <path d="M 22,28 Q 15,10 32,20 Z" fill="#FFF" stroke="#4A5568" stroke-width="3"/>
+          <path d="M 78,28 Q 85,10 68,20 Z" fill="#FFF" stroke="#4A5568" stroke-width="3"/>
+          <circle cx="38" cy="55" r="4" fill="#4A5568"/>
+          <circle cx="62" cy="55" r="4" fill="#4A5568"/>
+          <ellipse cx="32" cy="62" rx="4" ry="2" fill="#FFB7C5"/>
+          <ellipse cx="68" cy="62" rx="4" ry="2" fill="#FFB7C5"/>
+          <path d="M 45,64 Q 50,68 55,64" fill="none" stroke="#4A5568" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>`,
+      toto: `
+        <svg class="w-full h-full animate-bounce-gentle" viewBox="0 0 100 100">
+          <ellipse cx="35" cy="20" rx="6" ry="18" fill="#FFFDE6" stroke="#4A5568" stroke-width="3"/>
+          <ellipse cx="65" cy="20" rx="6" ry="18" fill="#FFFDE6" stroke="#4A5568" stroke-width="3"/>
+          <ellipse cx="35" cy="20" rx="3" ry="12" fill="#FFD1DC"/>
+          <ellipse cx="65" cy="20" rx="3" ry="12" fill="#FFD1DC"/>
+          <circle cx="50" cy="60" r="35" fill="#FFFDE6" stroke="#4A5568" stroke-width="3"/>
+          <circle cx="38" cy="58" r="4" fill="#4A5568"/>
+          <circle cx="62" cy="58" r="4" fill="#4A5568"/>
+          <ellipse cx="30" cy="65" rx="4" ry="2" fill="#FFB7C5"/>
+          <ellipse cx="70" cy="65" rx="4" ry="2" fill="#FFB7C5"/>
+          <path d="M 50,62 L 48,65 L 52,65 Z" fill="#FF8BA7"/>
+          <path d="M 46,67 Q 50,70 54,67" fill="none" stroke="#4A5568" stroke-width="2" stroke-linecap="round"/>
+        </svg>`
+    };
+
+    // Stickers Definition
+    const STICKERS = [
+      { id: 'stk_1', title: '귀여운 포포', icon: '🐻', condition: '첫 문제 도전하기' },
+      { id: 'stk_2', title: '구구단 달인', icon: '⭐', condition: '구구단 연습 50점 이상' },
+      { id: 'stk_3', title: '나눗셈 천재', icon: '💡', condition: '나눗셈 연습 50점 이상' },
+      { id: 'stk_4', title: '스피드 왕 토토', icon: '🐰', condition: '챌린지 100점 이상' },
+      { id: 'stk_5', title: '5연승 콤보!', icon: '🔥', condition: '연속 정답 5회 달성' },
+      { id: 'stk_6', title: '10연승 전설!', icon: '👑', condition: '연속 정답 10회 달성' },
+      { id: 'stk_7', title: '행복한 푸딩 파티', icon: '🍮', condition: '친구들 행복도 100% 달성' },
+      { id: 'stk_8', title: '수학의 수호신', icon: '🏆', condition: '총 점수 200점 이상' }
+    ];
+
+    // Encouragement Quotes
+    const PRAISES = [
+      { char: 'popo', text: '와아-! 정답이야! 대단해!' },
+      { char: 'momo', text: '탁월해! 풀 수 있을 줄 알았어!' },
+      { char: 'toto', text: '야호~! 훌륭하다 훌륭해!' },
+      { char: 'popo', text: '헤헤, 간식 고마워! 최고야!' }
+    ];
+
+    const WRONG_REPLIES = [
+      { char: 'popo', text: '아쉽다! 조금만 더 힘내자!' },
+      { char: 'momo', text: '괜찮아! 다시 한번 천천히 생각해봐!' },
+      { char: 'toto', text: '차근차근 다시 풀어보자!' }
+    ];
+
+    // Encouragement Quotes
+    const PRAISES = [
+      { char: 'chiikawa', text: '와아-! 정답이야! 대단해!' },
+      { char: 'hachiware', text: '탁월해! 풀 수 있을 줄 알았어!' },
+      { char: 'usagi', text: '야하~! 훌륭하다 훌륭해!' },
+      { char: 'chiikawa', text: '헤헤, 간식 고마워! 최고야!' }
+    ];
+
+    const WRONG_REPLIES = [
+      { char: 'chiikawa', text: '아쉽다! 조금만 더 힘내자!' },
+      { char: 'hachiware', text: '괜찮아! 다시 한번 천천히 생각해봐!' },
+      { char: 'usagi', text: '우라?! 차근차근 다시 풀어보자!' }
+    ];
+
+    /* ==========================================
+       2. WEB AUDIO API SOUND EFFECTS
+       ========================================== */
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playSound(type) {
+      if (!STATE.soundEnabled) return;
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      if (type === 'correct') {
+        // High Chime Sound (C5 -> G5)
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523.25, now);
+        osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.15);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+        osc.start(now);
+        osc.stop(now + 0.3);
+      } else if (type === 'wrong') {
+        // Soft Low Tone
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(220, now);
+        osc.frequency.linearRampToValueAtTime(160, now + 0.25);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      } else if (type === 'click') {
+        // Soft Pop
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(400, now);
+        osc.frequency.exponentialRampToValueAtTime(200, now + 0.05);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+        osc.start(now);
+        osc.stop(now + 0.05);
+      } else if (type === 'unlock') {
+        // Fanfare Tune
+        [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+          const o = audioCtx.createOscillator();
+          const g = audioCtx.createGain();
+          o.connect(g);
+          g.connect(audioCtx.destination);
+          o.frequency.setValueAtTime(freq, now + i * 0.08);
+          g.gain.setValueAtTime(0.2, now + i * 0.08);
+          g.gain.exponentialRampToValueAtTime(0.01, now + i * 0.08 + 0.2);
+          o.start(now + i * 0.08);
+          o.stop(now + i * 0.08 + 0.2);
+        });
+      }
+    }
+
+    function toggleSound() {
+      STATE.soundEnabled = !STATE.soundEnabled;
+      const btn = document.getElementById('sound-btn');
+      if (STATE.soundEnabled) {
+        btn.innerHTML = `<i class="fa-solid fa-volume-high text-lg"></i>`;
+        btn.classList.remove('bg-gray-200', 'text-gray-400');
+        btn.classList.add('bg-pink-100', 'text-pink-600');
+      } else {
+        btn.innerHTML = `<i class="fa-solid fa-volume-xmark text-lg"></i>`;
+        btn.classList.remove('bg-pink-100', 'text-pink-600');
+        btn.classList.add('bg-gray-200', 'text-gray-400');
+      }
+    }
+
+    /* ==========================================
+       3. VIEW & MODAL NAVIGATION
+       ========================================== */
+    function switchView(viewName) {
+      playSound('click');
+      document.getElementById('view-menu').classList.add('hidden');
+      document.getElementById('view-game').classList.add('hidden');
+      document.getElementById('view-result').classList.add('hidden');
+
+      if (viewName === 'menu') {
+        clearInterval(STATE.timerInterval);
+        document.getElementById('view-menu').classList.remove('hidden');
+      } else if (viewName === 'game') {
+        document.getElementById('view-game').classList.remove('hidden');
+        document.getElementById('view-game').classList.add('flex');
+      } else if (viewName === 'result') {
+        document.getElementById('view-result').classList.remove('hidden');
+        document.getElementById('view-result').classList.add('flex');
+      }
+    }
+
+    function openStickerBook() {
+      playSound('click');
+      renderStickerBook();
+      document.getElementById('modal-stickerbook').classList.remove('hidden');
+    }
+
+    function closeStickerBook() {
+      playSound('click');
+      document.getElementById('modal-stickerbook').classList.add('hidden');
+    }
+
+    /* ==========================================
+       4. GAME LOGIC & PROBLEM GENERATOR
+       ========================================== */
+    function startGame(mode) {
+      STATE.mode = mode;
+      STATE.score = 0;
+      STATE.streak = 0;
+      STATE.maxStreak = 0;
+      STATE.correctCount = 0;
+      STATE.happiness = 0;
+      STATE.timer = 60;
+
+      // Update UI Header tags
+      const tag = document.getElementById('game-mode-tag');
+      const timerDisp = document.getElementById('timer-display');
+
+      if (mode === 'multiplication') {
+        tag.textContent = '구구단 연습';
+        tag.className = 'px-3 py-1 rounded-full bg-pink-100 text-pink-600 font-bold border border-pink-300';
+        timerDisp.classList.add('hidden');
+      } else if (mode === 'division') {
+        tag.textContent = '나눗셈 연습';
+        tag.className = 'px-3 py-1 rounded-full bg-blue-100 text-blue-600 font-bold border border-blue-300';
+        timerDisp.classList.add('hidden');
+      } else {
+        tag.textContent = '혼합 챌린지';
+        tag.className = 'px-3 py-1 rounded-full bg-yellow-100 text-amber-700 font-bold border border-yellow-300';
+        timerDisp.classList.remove('hidden');
+        startTimer();
+      }
+
+      updateStatsUI();
+      switchView('game');
+      nextProblem();
+    }
+
+    function startTimer() {
+      clearInterval(STATE.timerInterval);
+      document.getElementById('timer-display').textContent = `⏱️ ${STATE.timer}초`;
+      
+      STATE.timerInterval = setInterval(() => {
+        STATE.timer--;
+        document.getElementById('timer-display').textContent = `⏱️ ${STATE.timer}초`;
+        
+        if (STATE.timer <= 0) {
+          clearInterval(STATE.timerInterval);
+          endGame();
+        }
+      }, 1000);
+    }
+
+    function generateProblem() {
+      let isDivision = false;
+      if (STATE.mode === 'division') isDivision = true;
+      else if (STATE.mode === 'mixed') isDivision = Math.random() < 0.5;
+
+      if (!isDivision) {
+        // Multiplication (2~9)
+        const a = Math.floor(Math.random() * 8) + 2;
+        const b = Math.floor(Math.random() * 8) + 2;
+        const ans = a * b;
+        return { a, b, op: '×', answer: ans };
+      } else {
+        // Basic Division derived from multiplication tables (e.g. 24 ÷ 6 = 4)
+        const divisor = Math.floor(Math.random() * 8) + 2;
+        const quotient = Math.floor(Math.random() * 8) + 2;
+        const dividend = divisor * quotient;
+        return { a: dividend, b: divisor, op: '÷', answer: quotient };
+      }
+    }
+
+    function nextProblem() {
+      STATE.keypadValue = '';
+      document.getElementById('keypad-input-val').textContent = '';
+
+      const prob = generateProblem();
+      
+      // Generate 3 wrong choices close to the answer
+      const choicesSet = new Set([prob.answer]);
+      while (choicesSet.size < 4) {
+        let diff = (Math.floor(Math.random() * 5) + 1) * (Math.random() < 0.5 ? 1 : -1);
+        let wrongAns = prob.answer + diff;
+        if (wrongAns > 0 && wrongAns !== prob.answer) {
+          choicesSet.add(wrongAns);
+        }
+      }
+
+      prob.choices = Array.from(choicesSet).sort(() => Math.random() - 0.5);
+      STATE.currentProblem = prob;
+
+      // Render Problem UI
+      document.getElementById('problem-text').textContent = `${prob.a} ${prob.op} ${prob.b} = ?`;
+
+      // Render Choices
+      const choiceBox = document.getElementById('input-choice-container');
+      choiceBox.innerHTML = '';
+      prob.choices.forEach(val => {
+        const btn = document.createElement('button');
+        btn.className = 'kawaii-card kawaii-btn bg-white hover:bg-pink-50 border-4 border-pink-200 text-3xl font-bold text-slate-800 py-4 rounded-3xl transition-transform active:scale-95';
+        btn.textContent = val;
+        btn.onclick = () => checkAnswer(val);
+        choiceBox.appendChild(btn);
+      });
+    }
+
+    /* ==========================================
+       5. INPUT HANDLING & ANSWER CHECKING
+       ========================================== */
+    function setInputMode(mode) {
+      playSound('click');
+      STATE.inputMode = mode;
+      const btnChoice = document.getElementById('btn-mode-choice');
+      const btnKeypad = document.getElementById('btn-mode-keypad');
+      const boxChoice = document.getElementById('input-choice-container');
+      const boxKeypad = document.getElementById('input-keypad-container');
+
+      if (mode === 'choice') {
+        btnChoice.className = 'px-3 py-1 text-sm rounded-xl font-bold bg-pink-500 text-white shadow';
+        btnKeypad.className = 'px-3 py-1 text-sm rounded-xl font-bold bg-gray-200 text-gray-700';
+        boxChoice.classList.remove('hidden');
+        boxKeypad.classList.add('hidden');
+      } else {
+        btnKeypad.className = 'px-3 py-1 text-sm rounded-xl font-bold bg-pink-500 text-white shadow';
+        btnChoice.className = 'px-3 py-1 text-sm rounded-xl font-bold bg-gray-200 text-gray-700';
+        boxKeypad.classList.remove('hidden');
+        boxChoice.classList.add('hidden');
+      }
+    }
+
+    function pressKey(val) {
+      playSound('click');
+      if (val === 'del') {
+        STATE.keypadValue = STATE.keypadValue.slice(0, -1);
+      } else {
+        if (STATE.keypadValue.length < 3) {
+          STATE.keypadValue += val;
+        }
+      }
+      document.getElementById('keypad-input-val').textContent = STATE.keypadValue;
+    }
+
+    function submitKeypad() {
+      if (!STATE.keypadValue) return;
+      checkAnswer(parseInt(STATE.keypadValue, 10));
+    }
+
+    function checkAnswer(userAnswer) {
+      const isCorrect = userAnswer === STATE.currentProblem.answer;
+
+      if (isCorrect) {
+        playSound('correct');
+        triggerConfetti();
+
+        STATE.score += 10 + Math.min(STATE.streak * 2, 10);
+        STATE.streak++;
+        STATE.correctCount++;
+        if (STATE.streak > STATE.maxStreak) STATE.maxStreak = STATE.streak;
+
+        // Increase Happiness Bar
+        STATE.happiness = Math.min(100, STATE.happiness + 10);
+
+        // Pick Random Praise Character & Speech
+        const praise = PRAISES[Math.floor(Math.random() * PRAISES.length)];
+        updateCharacter(praise.char, praise.text);
+
+        // Check Sticker Unlocks
+        checkStickerTriggers();
+
+        // Shake Card Animation on Success
+        const card = document.querySelector('#view-game .kawaii-card:nth-child(2)');
+        card.classList.add('animate-pop-up');
+        setTimeout(() => card.classList.remove('animate-pop-up'), 300);
+
+        updateStatsUI();
+        nextProblem();
+      } else {
+        playSound('wrong');
+        STATE.streak = 0;
+
+        const wrongReply = WRONG_REPLIES[Math.floor(Math.random() * WRONG_REPLIES.length)];
+        updateCharacter(wrongReply.char, wrongReply.text);
+
+        // Shake animation for error feedback
+        const card = document.querySelector('#view-game .kawaii-card:nth-child(2)');
+        card.classList.add('animate-shake');
+        setTimeout(() => card.classList.remove('animate-shake'), 400);
+
+        updateStatsUI();
+      }
+    }
+
+    function updateCharacter(charKey, text) {
+      const box = document.getElementById('char-avatar-box');
+      const speech = document.getElementById('char-speech');
+
+      box.innerHTML = CHARACTERS[charKey] || CHARACTERS.popo;
+      speech.textContent = `"${text}"`;
+    }
+
+    function updateStatsUI() {
+      document.getElementById('score-text').textContent = STATE.score;
+      document.getElementById('streak-text').textContent = STATE.streak;
+      document.getElementById('happiness-bar').style.width = `${STATE.happiness}%`;
+      document.getElementById('happiness-percent').textContent = `${STATE.happiness}%`;
+
+      // Dynamic Snack Icons based on happiness
+      const snacks = ['🍮', '🍓', '🍡', '🍰', '🍜'];
+      const snackIndex = Math.min(Math.floor(STATE.happiness / 25), snacks.length - 1);
+      document.getElementById('snack-icon').textContent = snacks[snackIndex];
+    }
+
+    function endGame() {
+      switchView('result');
+
+      document.getElementById('result-score').textContent = `${STATE.score}점`;
+      document.getElementById('result-correct').textContent = `${STATE.correctCount}개`;
+      document.getElementById('result-max-streak').textContent = `${STATE.maxStreak}회`;
+    }
+
+    function restartGame() {
+      startGame(STATE.mode);
+    }
+
+    /* ==========================================
+       6. STICKER BOOK SYSTEM & UNLOCKS
+       ========================================== */
+    function checkStickerTriggers() {
+      let newlyUnlocked = null;
+
+      if (STATE.mode === 'multiplication' && STATE.score >= 50 && !STATE.unlockedStickers.has('stk_2')) {
+        newlyUnlocked = 'stk_2';
+      } else if (STATE.mode === 'division' && STATE.score >= 50 && !STATE.unlockedStickers.has('stk_3')) {
+        newlyUnlocked = 'stk_3';
+      } else if (STATE.mode === 'mixed' && STATE.score >= 100 && !STATE.unlockedStickers.has('stk_4')) {
+        newlyUnlocked = 'stk_4';
+      }
+
+      if (STATE.streak >= 5 && !STATE.unlockedStickers.has('stk_5')) newlyUnlocked = 'stk_5';
+      if (STATE.streak >= 10 && !STATE.unlockedStickers.has('stk_6')) newlyUnlocked = 'stk_6';
+      if (STATE.happiness >= 100 && !STATE.unlockedStickers.has('stk_7')) newlyUnlocked = 'stk_7';
+      if (STATE.score >= 200 && !STATE.unlockedStickers.has('stk_8')) newlyUnlocked = 'stk_8';
+
+      if (newlyUnlocked) {
+        STATE.unlockedStickers.add(newlyUnlocked);
+        playSound('unlock');
+        showUnlockedBanner(newlyUnlocked);
+        updateStickerBadgeCount();
+      }
+    }
+
+    function showUnlockedBanner(stickerId) {
+      const stk = STICKERS.find(s => s.id === stickerId);
+      if (!stk) return;
+
+      const banner = document.getElementById('unlocked-sticker-banner');
+      document.getElementById('unlocked-sticker-name').textContent = `${stk.icon} ${stk.title}`;
+      banner.classList.remove('hidden');
+    }
+
+    function updateStickerBadgeCount() {
+      document.getElementById('sticker-count-badge').textContent = `${STATE.unlockedStickers.size}/${STICKERS.length}`;
+    }
+
+    function renderStickerBook() {
+      const grid = document.getElementById('stickers-grid');
+      grid.innerHTML = '';
+
+      STICKERS.forEach(stk => {
+        const isUnlocked = STATE.unlockedStickers.has(stk.id);
+        const item = document.createElement('div');
+        item.className = `p-3 rounded-2xl border-2 flex flex-col items-center text-center transition-all ${
+          isUnlocked ? 'bg-amber-50 border-yellow-300 shadow-sm' : 'bg-gray-100 border-gray-300 opacity-60'
+        }`;
+
+        item.innerHTML = `
+          <div class="text-4xl mb-1 ${isUnlocked ? 'animate-bounce-gentle' : 'filter grayscale'}">${isUnlocked ? stk.icon : '🔒'}</div>
+          <div class="text-xs font-bold ${isUnlocked ? 'text-amber-900' : 'text-gray-500'} mb-1">${stk.title}</div>
+          <div class="text-[10px] text-gray-400 font-bold">${stk.condition}</div>
+        `;
+        grid.appendChild(item);
+      });
+    }
+
+    /* ==========================================
+       7. CONFETTI PARTICLE SYSTEM
+       ========================================== */
+    const canvas = document.getElementById('confetti-canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function triggerConfetti() {
+      const colors = ['#FFB7C5', '#A3D8F4', '#FCE38A', '#FF9AA2', '#B5EAD7'];
+      for (let i = 0; i < 35; i++) {
+        particles.push({
+          x: window.innerWidth / 2,
+          y: window.innerHeight / 2,
+          vx: (Math.random() - 0.5) * 12,
+          vy: (Math.random() - 0.8) * 12,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          size: Math.random() * 8 + 4,
+          life: 1
+        });
+      }
+    }
+
+    function renderParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach((p, idx) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.3; // Gravity
+        p.life -= 0.02;
+
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = Math.max(0, p.life);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (p.life <= 0) particles.splice(idx, 1);
+      });
+      requestAnimationFrame(renderParticles);
+    }
+    renderParticles();
+
+    /* ==========================================
+       8. INITIALIZATION
+       ========================================== */
+    window.onload = () => {
+      updateCharacter('popo', '나랑 같이 신나게 구구단이랑 나눗셈 공부할래? 와아-!');
+      updateStickerBadgeCount();
+    };
+  </script>
+</body>
+</html>
